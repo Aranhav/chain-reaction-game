@@ -1,0 +1,25 @@
+{
+  "name": "chain-reaction-game",
+  "version": "1.0.0",
+  "description": "Chain Reaction Neon - A multiplayer strategy game with AI opponent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "game",
+    "chain-reaction",
+    "multiplayer",
+    "canvas",
+    "firebase"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
