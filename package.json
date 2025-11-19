@@ -12,12 +12,14 @@
     "chain-reaction",
     "multiplayer",
     "canvas",
-    "firebase"
+    "socket.io",
+    "websocket"
   ],
-  "author": "",
+  "author": "Kaiross",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -58,13 +58,8 @@
     }
     </script>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
-        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, getDocs, setDoc };
-    </script>
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
@@ -451,34 +446,24 @@
         </div>
     </div>
 
-<script type="module">
-    // --- Firebase Integration ---
-    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, getDocs, setDoc } = window.firebaseModules;
+<script>
+    // --- Socket.io Connection ---
+    const socket = io({
+        transports: ['websocket', 'polling'],
+        upgrade: true
+    });
 
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfig) : null;
-    const auth = app ? getAuth(app) : null;
-    const db = app ? getFirestore(app) : null;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    socket.on('connect', () => {
+        console.log('Connected to server:', socket.id);
+    });
 
-    let currentUser = null;
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+    });
 
-    async function initAuth() {
-        if (!auth) return;
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-            await signInAnonymously(auth);
-        }
-    }
-
-    if (auth) {
-        initAuth();
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            console.log("Auth state:", user ? "Logged In" : "Logged Out");
-        });
-    }
+    socket.on('connect_error', (error) => {
+        console.error('Connection error:', error);
+    });
 
     // --- Game Code ---
 
@@ -584,132 +569,110 @@
         }
     }
 
-    // --- Online Manager ---
+    // --- Online Manager (Socket.io) ---
     class OnlineManager {
         constructor(game) {
             this.game = game;
-            this.gameId = null;
             this.playerIndex = -1;
-            this.unsubscribe = null;
             this.roomCode = null;
+            this.setupSocketListeners();
         }
 
-        async autoMatch() {
-            if (!currentUser || !db) return;
-            const gamesRef = collection(db, 'artifacts', appId, 'public', 'data', 'games');
-            const snapshot = await getDocs(gamesRef);
-
-            let targetGame = null;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.status === 'waiting' && data.hostId !== currentUser.uid) {
-                    targetGame = { id: doc.id, ...data };
-                }
+        setupSocketListeners() {
+            // Waiting for opponent
+            socket.on('waiting', (data) => {
+                document.getElementById('lobby-main').style.display = 'none';
+                document.getElementById('lobby-waiting').style.display = 'block';
+                document.getElementById('waiting-msg').innerText = data.message;
             });
 
-            if (targetGame) {
-                this.joinGameById(targetGame.id);
-            } else {
-                this.createGame(false);
-            }
-        }
-
-        async createGame(isPrivate) {
-            if (!currentUser || !db) return;
-            const code = generateRoomCode();
-            const gameData = {
-                hostId: currentUser.uid,
-                status: 'waiting',
-                code: code,
-                isPrivate: isPrivate,
-                players: [{uid: currentUser.uid, index: 0}],
-                turn: 0,
-                lastMove: null,
-                createdAt: Date.now()
-            };
-
-            const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'games'), gameData);
-            this.gameId = docRef.id;
-            this.playerIndex = 0;
-            this.roomCode = code;
-            this.listenToGame();
-
-            document.getElementById('lobby-main').style.display = 'none';
-            document.getElementById('lobby-waiting').style.display = 'block';
-            document.getElementById('waiting-msg').innerText = isPrivate ? "Waiting for friend..." : "Searching for opponent...";
-            if(isPrivate) {
+            // Room created (private)
+            socket.on('room-created', (data) => {
+                this.roomCode = data.roomCode;
+                document.getElementById('lobby-main').style.display = 'none';
+                document.getElementById('lobby-waiting').style.display = 'block';
+                document.getElementById('waiting-msg').innerText = "Waiting for friend...";
                 const codeDisplay = document.getElementById('display-room-code');
-                codeDisplay.innerText = code;
+                codeDisplay.innerText = data.roomCode;
                 codeDisplay.style.display = 'block';
-            }
-        }
-
-        async joinGameByCode(code) {
-            if (!currentUser || !db) return;
-            code = code.toUpperCase();
-            const gamesRef = collection(db, 'artifacts', appId, 'public', 'data', 'games');
-            const snapshot = await getDocs(gamesRef);
-            let foundId = null;
-
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.code === code && data.status === 'waiting') {
-                    foundId = doc.id;
-                }
             });
 
-            if (foundId) {
-                this.joinGameById(foundId);
+            // Game started
+            socket.on('game-start', (data) => {
+                this.playerIndex = data.playerIndex;
+                this.roomCode = data.roomCode;
+
+                document.getElementById('lobby-modal').classList.remove('active');
+                this.game.startOnlineGame(data.playerIndex, data.grid);
+                document.getElementById('online-room-id').innerText = data.roomCode;
+                document.getElementById('online-status').style.display = 'block';
+                document.getElementById('local-controls').style.display = 'none';
+            });
+
+            // Move received from server
+            socket.on('move-made', (data) => {
+                this.game.applyOnlineMove(data);
+            });
+
+            // Game over
+            socket.on('game-over', (data) => {
+                this.game.triggerWin(data.winner);
+            });
+
+            // Opponent disconnected
+            socket.on('opponent-disconnected', () => {
+                alert('Opponent disconnected. You win!');
+                this.game.triggerWin(this.playerIndex);
+            });
+
+            // Error handling
+            socket.on('error', (data) => {
+                console.error('Server error:', data.message);
+                document.getElementById('join-error').innerText = data.message;
+            });
+
+            // Waiting cancelled
+            socket.on('waiting-cancelled', () => {
+                document.getElementById('lobby-main').style.display = 'block';
+                document.getElementById('lobby-waiting').style.display = 'none';
+            });
+
+            // Room expired
+            socket.on('room-expired', () => {
+                alert('Room expired due to inactivity');
+                this.cleanup();
+            });
+        }
+
+        autoMatch() {
+            socket.emit('auto-match');
+        }
+
+        createGame(isPrivate) {
+            if (isPrivate) {
+                socket.emit('create-room');
             } else {
-                document.getElementById('join-error').innerText = "Room not found or full.";
+                socket.emit('auto-match');
             }
         }
 
-        async joinGameById(gameId) {
-            if (!db) return;
-            const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', gameId);
-            await updateDoc(gameRef, {
-                status: 'playing',
-                guestId: currentUser.uid
-            });
-            this.gameId = gameId;
-            this.playerIndex = 1;
-            this.listenToGame();
+        joinGameByCode(code) {
+            document.getElementById('join-error').innerText = '';
+            socket.emit('join-room', { roomCode: code.toUpperCase() });
         }
 
-        listenToGame() {
-            if (!db) return;
-            this.unsubscribe = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', this.gameId), (docSnap) => {
-                const data = docSnap.data();
-                if (!data) return;
-
-                if (data.status === 'playing' && !this.game.isOnline) {
-                    document.getElementById('lobby-modal').classList.remove('active');
-                    this.game.startOnlineGame(this.playerIndex, data);
-                    document.getElementById('online-room-id').innerText = data.code || 'AUTO';
-                    document.getElementById('online-status').style.display = 'block';
-                    document.getElementById('local-controls').style.display = 'none';
-                }
-
-                if (data.lastMove && data.lastMove.id !== this.game.lastProcessedMoveId) {
-                    this.game.applyOnlineMove(data.lastMove);
-                }
-            });
+        sendMove(r, c) {
+            socket.emit('move', { r, c });
         }
 
-        async sendMove(r, c, playerIdx) {
-            if (!this.gameId || !db) return;
-            const moveId = Math.random().toString(36).substring(7);
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', this.gameId), {
-                lastMove: { r, c, player: playerIdx, id: moveId },
-                turn: (playerIdx + 1) % 2
-            });
+        cancelWaiting() {
+            socket.emit('cancel-waiting');
         }
 
         cleanup() {
-            if (this.unsubscribe) this.unsubscribe();
-            this.gameId = null;
+            socket.emit('leave-room');
             this.playerIndex = -1;
+            this.roomCode = null;
             document.getElementById('online-status').style.display = 'none';
             document.getElementById('local-controls').style.display = 'flex';
         }
@@ -912,10 +875,22 @@
             }
         }
 
-        startOnlineGame(myIndex, initialData) {
+        startOnlineGame(myIndex, serverGrid) {
             this.isOnline = true;
             this.myOnlineIndex = myIndex;
             this.setupGame(2, 'medium');
+
+            // Sync grid from server
+            if (serverGrid) {
+                for (let r = 0; r < this.gridRows; r++) {
+                    for (let c = 0; c < this.gridCols; c++) {
+                        this.grid[r][c].count = serverGrid[r][c].count;
+                        this.grid[r][c].owner = serverGrid[r][c].owner;
+                    }
+                }
+            }
+
+            this.resize();
             this.updateUI();
         }
 
@@ -975,8 +950,9 @@
 
             if (cell.owner === null || cell.owner === this.currentPlayerIndex) {
                 if (this.isOnline) {
-                    this.onlineManager.sendMove(r, c, this.currentPlayerIndex);
-                    this.executeMove(r, c, this.currentPlayerIndex);
+                    // Only send to server, don't execute locally
+                    // Server will validate and broadcast back
+                    this.onlineManager.sendMove(r, c);
                 } else {
                     this.executeMove(r, c, this.currentPlayerIndex);
                 }
@@ -996,12 +972,25 @@
         }
 
         applyOnlineMove(moveData) {
-            this.lastProcessedMoveId = moveData.id;
-            if (moveData.player === this.myOnlineIndex) {
-                this.executeMove(moveData.r, moveData.c, moveData.player);
-            } else {
-                this.executeMove(moveData.r, moveData.c, moveData.player);
+            // Sync entire grid state from server (authoritative)
+            for (let r = 0; r < this.gridRows; r++) {
+                for (let c = 0; c < this.gridCols; c++) {
+                    this.grid[r][c].count = moveData.grid[r][c].count;
+                    this.grid[r][c].owner = moveData.grid[r][c].owner;
+                }
             }
+
+            // Update turn
+            this.currentPlayerIndex = moveData.currentTurn;
+
+            // Play sound for the move
+            window.soundManager.playPop();
+
+            // Check win condition
+            this.checkWinCondition();
+
+            // Update UI
+            this.updateUI();
         }
 
         checkExplosions() {
@@ -1332,9 +1321,10 @@
         });
 
         document.getElementById('cancel-waiting-btn').addEventListener('click', () => {
-             gameInstance.onlineManager.cleanup();
+             gameInstance.onlineManager.cancelWaiting();
              document.getElementById('lobby-main').style.display = 'block';
              document.getElementById('lobby-waiting').style.display = 'none';
+             document.getElementById('display-room-code').style.display = 'none';
         });
 
         document.getElementById('exit-online-btn').addEventListener('click', () => {
