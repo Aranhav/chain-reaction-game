@@ -203,6 +203,11 @@
             border-color: var(--accent);
         }
 
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         label {
             display: flex;
             align-items: center;
@@ -1486,7 +1491,21 @@
     // Dynamic settings change
     document.getElementById('player-select').addEventListener('change', () => gameInstance.restart(false));
     document.getElementById('grid-select').addEventListener('change', () => gameInstance.restart(false));
-    document.getElementById('ai-toggle').addEventListener('change', () => gameInstance.restart(false));
+    document.getElementById('ai-toggle').addEventListener('change', () => {
+        const aiToggle = document.getElementById('ai-toggle');
+        const playerSelect = document.getElementById('player-select');
+
+        if (aiToggle.checked) {
+            // AI mode: force 2 players and disable selector
+            playerSelect.value = '2';
+            playerSelect.disabled = true;
+        } else {
+            // Local mode: enable selector
+            playerSelect.disabled = false;
+        }
+
+        gameInstance.restart(false);
+    });
 
     window.onload = initGame;
 
