@@ -377,9 +377,52 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Confetti Animation */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            animation: confetti-fall 3s ease-in-out forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                opacity: 1;
+                transform: translateY(-100%) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+
+        .win-flash {
+            animation: win-pulse 0.5s ease-in-out 3;
+        }
+
+        @keyframes win-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
     </style>
 </head>
 <body>
+
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="confetti-container"></div>
 
     <div id="header">
         <div class="top-row">
@@ -1083,6 +1126,15 @@
                     cell.owner = p.color;
                     cell.count++;
                 });
+
+                // Check for winner after each batch of projectiles
+                if (this.checkWinCondition()) {
+                    // Winner found - stop all further chain reactions
+                    this.projectiles = [];
+                    this.isAnimating = false;
+                    return;
+                }
+
                 this.checkExplosions();
             }
 
@@ -1164,12 +1216,22 @@
             let aliveCount = this.playersAlive.filter(Boolean).length;
             if (aliveCount === 1 && totalOrbs > 1) {
                 this.triggerWin(this.playersAlive.indexOf(true));
+                return true; // Winner found
             }
+            return false; // No winner yet
         }
 
         triggerWin(playerIndex) {
             this.gameOver = true;
             window.soundManager.playWin();
+
+            // Trigger confetti animation
+            this.createConfetti(playerIndex);
+
+            // Flash the canvas
+            this.canvas.classList.add('win-flash');
+            setTimeout(() => this.canvas.classList.remove('win-flash'), 1500);
+
             const modal = document.getElementById('win-modal');
             const text = document.getElementById('winner-text');
 
@@ -1187,6 +1249,45 @@
             text.innerText = winText;
             text.style.color = COLORS[playerIndex];
             modal.classList.add('active');
+        }
+
+        createConfetti(playerIndex) {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = ''; // Clear previous confetti
+
+            const winnerColor = COLORS[playerIndex];
+            const confettiColors = [winnerColor, '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+            const shapes = ['square', 'circle'];
+
+            // Create 100 confetti pieces
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+
+                const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                const left = Math.random() * 100;
+                const delay = Math.random() * 2;
+                const duration = 2 + Math.random() * 2;
+                const size = 5 + Math.random() * 10;
+
+                confetti.style.cssText = `
+                    left: ${left}%;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${color};
+                    border-radius: ${shape === 'circle' ? '50%' : '0'};
+                    animation-delay: ${delay}s;
+                    animation-duration: ${duration}s;
+                `;
+
+                container.appendChild(confetti);
+            }
+
+            // Clear confetti after animation
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
         }
 
         updateUI() {
