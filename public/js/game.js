@@ -126,44 +126,7 @@ class Game {
     }
 
     resize() {
-        const container = document.getElementById('game-container');
-        if (!container) return;
-
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-
-        // Ensure non-zero dimensions
-        if (containerWidth === 0 || containerHeight === 0) {
-            console.warn('Game container has 0 size, retrying...');
-            setTimeout(() => this.resize(), 100);
-            return;
-        }
-
-        // Calculate cell size to maintain square-ish cells
-        const padding = 40; // Padding around the grid
-        const availableWidth = containerWidth - padding * 2;
-        const availableHeight = containerHeight - padding * 2;
-
-        // Calculate cell size based on available space
-        const cellByWidth = availableWidth / this.cols;
-        const cellByHeight = availableHeight / this.rows;
-        const cellSize = Math.min(cellByWidth, cellByHeight);
-
-        // Calculate actual canvas size
-        this.cellWidth = cellSize;
-        this.cellHeight = cellSize;
-        this.width = this.cols * cellSize;
-        this.height = this.rows * cellSize;
-
-        // Set canvas size with device pixel ratio for crisp rendering
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = this.width * dpr;
-        this.canvas.height = this.height * dpr;
-        this.canvas.style.width = this.width + 'px';
-        this.canvas.style.height = this.height + 'px';
-        this.ctx.scale(dpr, dpr);
-
-        console.log(`Canvas resized: ${this.width}x${this.height}, Cell: ${this.cellWidth}x${this.cellHeight}`);
+        this.doResize();
     }
 
     createGrid() {
@@ -187,11 +150,51 @@ class Game {
     restartGame() {
         this.isOnline = false;
         this.online.cleanup();
-        this.resize(); // Recalculate cell sizes
+        this.animations = []; // Clear animations
+        this.isAnimating = false;
+        this.isGameOver = false;
+
+        // Resize and recreate grid
+        this.doResize();
         this.createGrid();
+
         // Show controls section (for mobile)
         const controls = document.querySelector('.controls-section');
         if (controls) controls.style.display = 'flex';
+    }
+
+    // Synchronous resize without retry delays
+    doResize() {
+        const container = document.getElementById('game-container');
+        if (!container) return;
+
+        const containerWidth = container.clientWidth || 800;
+        const containerHeight = container.clientHeight || 600;
+
+        // Calculate cell size to maintain square cells
+        const padding = 40;
+        const availableWidth = containerWidth - padding * 2;
+        const availableHeight = containerHeight - padding * 2;
+
+        const cellByWidth = availableWidth / this.cols;
+        const cellByHeight = availableHeight / this.rows;
+        const cellSize = Math.min(cellByWidth, cellByHeight);
+
+        this.cellWidth = cellSize;
+        this.cellHeight = cellSize;
+        this.width = this.cols * cellSize;
+        this.height = this.rows * cellSize;
+
+        // Set canvas size with device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this.width * dpr;
+        this.canvas.height = this.height * dpr;
+        this.canvas.style.width = this.width + 'px';
+        this.canvas.style.height = this.height + 'px';
+
+        // Reset and scale context
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.scale(dpr, dpr);
     }
 
     startOnlineGame(playerIndex, initialGrid) {
@@ -437,10 +440,18 @@ class Game {
     }
 
     draw() {
+        // Safety check - ensure grid exists and matches dimensions
+        if (!this.grid || this.grid.length !== this.rows || (this.grid[0] && this.grid[0].length !== this.cols)) {
+            return; // Skip drawing if grid is not properly initialized
+        }
+
         // Reset transform for clean draw
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         const dpr = window.devicePixelRatio || 1;
         this.ctx.scale(dpr, dpr);
+
+        // Get current player color for grid
+        const currentColor = COLORS[this.currentTurn] || COLORS[0];
 
         // Clear background with gradient
         const bgGradient = this.ctx.createRadialGradient(
@@ -452,22 +463,10 @@ class Game {
         this.ctx.fillStyle = bgGradient;
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // Draw Grid Background Cells (subtle hover effect area)
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                const x = c * this.cellWidth;
-                const y = r * this.cellHeight;
-
-                // Cell background with subtle gradient
-                this.ctx.fillStyle = 'rgba(15, 15, 15, 0.5)';
-                this.ctx.fillRect(x + 1, y + 1, this.cellWidth - 2, this.cellHeight - 2);
-            }
-        }
-
-        // Draw Grid Lines with glow
-        this.ctx.shadowBlur = 8;
-        this.ctx.shadowColor = 'rgba(0, 243, 255, 0.3)';
-        this.ctx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
+        // Draw Grid Lines - color matches current player
+        this.ctx.shadowBlur = 6;
+        this.ctx.shadowColor = hexToRgba(currentColor, 0.4);
+        this.ctx.strokeStyle = hexToRgba(currentColor, 0.3);
         this.ctx.lineWidth = 1;
 
         // Horizontal lines
@@ -488,21 +487,11 @@ class Game {
 
         this.ctx.shadowBlur = 0;
 
-        // Draw corner dots for style
-        this.ctx.fillStyle = 'rgba(0, 243, 255, 0.4)';
-        for (let r = 0; r <= this.rows; r++) {
-            for (let c = 0; c <= this.cols; c++) {
-                this.ctx.beginPath();
-                this.ctx.arc(c * this.cellWidth, r * this.cellHeight, 2, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-        }
-
         // Draw Orbs
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
-                const cell = this.grid[r][c];
-                if (cell.owner !== null && cell.count > 0) {
+                const cell = this.grid[r]?.[c];
+                if (cell && cell.owner !== null && cell.count > 0) {
                     this.drawOrbs(r, c, cell.count, cell.owner);
                 }
             }
@@ -542,13 +531,12 @@ class Game {
             }
         }
 
-        // Draw current player indicator border
-        const currentColor = COLORS[this.currentTurn];
-        this.ctx.strokeStyle = hexToRgba(currentColor, 0.3);
-        this.ctx.lineWidth = 3;
-        this.ctx.shadowBlur = 15;
+        // Draw outer border in current player color
+        this.ctx.strokeStyle = hexToRgba(currentColor, 0.5);
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowBlur = 10;
         this.ctx.shadowColor = currentColor;
-        this.ctx.strokeRect(1.5, 1.5, this.width - 3, this.height - 3);
+        this.ctx.strokeRect(1, 1, this.width - 2, this.height - 2);
         this.ctx.shadowBlur = 0;
     }
 

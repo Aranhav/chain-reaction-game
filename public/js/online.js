@@ -49,7 +49,9 @@ export class OnlineManager {
             this.game.startOnlineGame(data.playerIndex, data.grid);
             document.getElementById('online-room-id').innerText = data.roomCode;
             document.getElementById('online-status').style.display = 'block';
-            document.getElementById('local-controls').style.display = 'none';
+            // Hide local controls during online play
+            const controls = document.querySelector('.controls-section');
+            if (controls) controls.style.display = 'none';
         });
 
         // Move received from server
@@ -116,7 +118,10 @@ export class OnlineManager {
         this.socket.emit('leave-room');
         this.playerIndex = -1;
         this.roomCode = null;
-        document.getElementById('online-status').style.display = 'none';
-        document.getElementById('local-controls').style.display = 'flex';
+        const onlineStatus = document.getElementById('online-status');
+        if (onlineStatus) onlineStatus.style.display = 'none';
+        // Show local controls after leaving online game
+        const controls = document.querySelector('.controls-section');
+        if (controls) controls.style.display = 'flex';
     }
 }
