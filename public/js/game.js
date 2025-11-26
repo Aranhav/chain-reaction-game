@@ -394,6 +394,11 @@ class Game {
             unstable = false;
             loops++;
 
+            // Check for early termination - if game is already won, stop the chain
+            if (this.checkChainWinCondition(playerIndex)) {
+                break; // Game is won, no need to continue
+            }
+
             const criticals = [];
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
@@ -451,6 +456,13 @@ class Game {
                     }
                 }
 
+                // Check again after spread - stop if game is won
+                if (this.checkChainWinCondition(playerIndex)) {
+                    // Brief delay to show final explosion, then stop
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    break;
+                }
+
                 // Wait for animation AFTER the split (not before)
                 // Shorter delay for chain reactions to feel snappier
                 const delay = isFirstReaction ? 100 : 150;
@@ -458,6 +470,29 @@ class Game {
                 isFirstReaction = false;
             }
         }
+    }
+
+    // Check if a player has won during chain reaction (all orbs belong to one player)
+    checkChainWinCondition(playerIndex) {
+        // Only check if at least 2 players have moved
+        if (this.playersWhoMoved.size < 2) return false;
+
+        // Count players with orbs on the board
+        const playersWithOrbs = new Set();
+        let totalOrbs = 0;
+
+        for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < this.cols; c++) {
+                const cell = this.grid[r][c];
+                if (cell.count > 0 && cell.owner !== null) {
+                    playersWithOrbs.add(cell.owner);
+                    totalOrbs += cell.count;
+                }
+            }
+        }
+
+        // Game is won if only one player has orbs and there are orbs on the board
+        return playersWithOrbs.size === 1 && totalOrbs > 0;
     }
 
     checkWinner() {
