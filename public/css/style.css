@@ -154,6 +154,13 @@ select:focus {
     box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
 }
 
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: var(--glass-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
 .action-buttons {
     display: flex;
     flex-direction: column;

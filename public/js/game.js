@@ -19,6 +19,8 @@ class Game {
         this.isGameOver = false;
         this.isAnimating = false;
         this.animations = [];
+        this.eliminatedPlayers = new Set(); // Track eliminated players
+        this.playersWhoMoved = new Set(); // Track who has made at least one move
 
         // Modes
         this.isOnline = false;
@@ -78,6 +80,18 @@ class Game {
 
         document.getElementById('ai-toggle').addEventListener('change', (e) => {
             this.isAI = e.target.checked;
+            const playerSelect = document.getElementById('player-select');
+
+            if (this.isAI) {
+                // Force 2 players when AI is enabled
+                this.players = 2;
+                playerSelect.value = '2';
+                playerSelect.disabled = true;
+            } else {
+                // Re-enable player selection when AI is disabled
+                playerSelect.disabled = false;
+            }
+
             this.restartGame();
         });
 
@@ -158,6 +172,8 @@ class Game {
         }
         this.currentTurn = 0;
         this.isGameOver = false;
+        this.eliminatedPlayers = new Set(); // Reset eliminated players
+        this.playersWhoMoved = new Set(); // Reset move tracking
         this.updateUI();
     }
 
@@ -269,6 +285,9 @@ class Game {
     executeMove(r, c, playerIndex) {
         this.sound.playPop();
 
+        // Track that this player has made a move
+        this.playersWhoMoved.add(playerIndex);
+
         this.grid[r][c].owner = playerIndex;
         this.grid[r][c].count++;
 
@@ -276,15 +295,19 @@ class Game {
         this.processChainReaction(playerIndex).then(() => {
             this.isAnimating = false;
 
+            // Check for eliminated players (only those who have already moved)
+            this.checkEliminations();
+
             // Check Win
             const winner = this.checkWinner();
             if (winner !== null) {
                 this.triggerWin(winner);
             } else {
-                this.currentTurn = (this.currentTurn + 1) % this.players;
+                // Get next active (non-eliminated) player
+                this.currentTurn = this.getNextActivePlayer();
                 this.updateUI();
 
-                // AI Turn
+                // AI Turn (AI is always player 1 in 2-player mode)
                 if (!this.isOnline && this.isAI && this.currentTurn !== 0) {
                     setTimeout(() => {
                         const move = this.ai.makeMove(this.grid, this.currentTurn, this.rows, this.cols);
@@ -293,6 +316,57 @@ class Game {
                 }
             }
         });
+    }
+
+    // Check if any players should be eliminated (no orbs on grid after they've moved)
+    checkEliminations() {
+        const counts = this.getPlayerOrbCounts();
+
+        for (let p = 0; p < this.players; p++) {
+            // Only eliminate if player has moved at least once and now has 0 orbs
+            if (this.playersWhoMoved.has(p) && counts[p] === 0 && !this.eliminatedPlayers.has(p)) {
+                this.eliminatedPlayers.add(p);
+                console.log(`Player ${p + 1} eliminated!`);
+            }
+        }
+    }
+
+    // Get orb counts for each player
+    getPlayerOrbCounts() {
+        const counts = new Array(this.players).fill(0);
+        for (const row of this.grid) {
+            for (const cell of row) {
+                if (cell.owner !== null && cell.owner < this.players) {
+                    counts[cell.owner] += cell.count;
+                }
+            }
+        }
+        return counts;
+    }
+
+    // Get the next player who isn't eliminated
+    getNextActivePlayer() {
+        let next = (this.currentTurn + 1) % this.players;
+        let attempts = 0;
+
+        // Find next non-eliminated player
+        while (this.eliminatedPlayers.has(next) && attempts < this.players) {
+            next = (next + 1) % this.players;
+            attempts++;
+        }
+
+        return next;
+    }
+
+    // Count active (non-eliminated) players
+    getActivePlayers() {
+        const active = [];
+        for (let p = 0; p < this.players; p++) {
+            if (!this.eliminatedPlayers.has(p)) {
+                active.push(p);
+            }
+        }
+        return active;
     }
 
     async processChainReaction(playerIndex) {
@@ -359,31 +433,29 @@ class Game {
     }
 
     checkWinner() {
-        if (this.currentTurn === 0 && !this.grid.some(row => row.some(cell => cell.owner !== null))) return null; // Start of game
+        // Don't check for winner until at least 2 players have moved
+        if (this.playersWhoMoved.size < 2) return null;
 
-        const counts = new Array(this.players).fill(0);
-        let totalOrbs = 0;
+        // Get active (non-eliminated) players
+        const activePlayers = this.getActivePlayers();
 
-        for (const row of this.grid) {
-            for (const cell of row) {
-                if (cell.owner !== null) {
-                    counts[cell.owner]++;
-                    totalOrbs++;
-                }
+        // If only one active player remains, they win
+        if (activePlayers.length === 1) {
+            return activePlayers[0];
+        }
+
+        // Also check if only one player has orbs (backup check)
+        const counts = this.getPlayerOrbCounts();
+        const playersWithOrbs = [];
+        for (let p = 0; p < this.players; p++) {
+            if (counts[p] > 0) {
+                playersWithOrbs.push(p);
             }
         }
 
-        if (totalOrbs < 2) return null; // Too early
-
-        const activePlayers = counts.map((c, i) => c > 0 ? i : -1).filter(i => i !== -1);
-
-        // If we've played at least one full round (approx)
-        // Actually, logic is: if only one player has orbs left, they win.
-        // But we need to make sure everyone has had a chance to play? 
-        // Standard Chain Reaction rules: Elimination.
-
-        if (activePlayers.length === 1 && totalOrbs > 1) {
-            return activePlayers[0];
+        // If only one player has orbs and multiple have moved
+        if (playersWithOrbs.length === 1 && this.playersWhoMoved.size >= 2) {
+            return playersWithOrbs[0];
         }
 
         return null;
@@ -421,9 +493,20 @@ class Game {
 
     updateUI() {
         const color = COLORS[this.currentTurn];
-        this.turnText.innerText = this.isOnline
-            ? (this.currentTurn === this.myPlayerIndex ? "Your Turn" : "Opponent's Turn")
-            : `Player ${this.currentTurn + 1}'s Turn`;
+
+        // Show current player and elimination count
+        let turnText = '';
+        if (this.isOnline) {
+            turnText = this.currentTurn === this.myPlayerIndex ? "Your Turn" : "Opponent's Turn";
+        } else {
+            turnText = `Player ${this.currentTurn + 1}'s Turn`;
+            // Show eliminated count if any players are eliminated
+            if (this.eliminatedPlayers.size > 0) {
+                const remaining = this.players - this.eliminatedPlayers.size;
+                turnText += ` (${remaining} left)`;
+            }
+        }
+        this.turnText.innerText = turnText;
 
         this.turnText.style.color = color;
         if (this.turnIndicator) {
