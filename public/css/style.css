@@ -1,0 +1,466 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+:root {
+    /* Neon Cyberpunk Palette */
+    --bg-color: #050505;
+    --bg-gradient: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+
+    --grid-line: rgba(0, 243, 255, 0.2);
+    /* Brighter, Cyan tint */
+    --grid-glow: 0 0 10px rgba(0, 243, 255, 0.1);
+
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+
+    --accent-primary: #00f3ff;
+    /* Cyan Neon */
+    --accent-secondary: #bc13fe;
+    /* Purple Neon */
+    --accent-tertiary: #ff0055;
+    /* Pink Neon */
+
+    --glass-bg: rgba(20, 20, 20, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-blur: 16px;
+
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+
+    --sidebar-width: 320px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    background-image: var(--bg-gradient);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    overflow: hidden;
+    height: 100vh;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* --- Main Layout --- */
+.main-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: var(--sidebar-width);
+    background: rgba(10, 10, 10, 0.95);
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    gap: 32px;
+    backdrop-filter: blur(var(--glass-blur));
+    z-index: 10;
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.brand-section h1 {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    margin: 0;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    /* Fallback */
+    text-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.online-status {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.online-status span {
+    background: rgba(0, 243, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+/* --- Controls Section --- */
+.controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.checkbox-group label {
+    flex-direction: row;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+select {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    padding: 12px;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+select:hover {
+    border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+}
+
+button {
+    padding: 14px;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+
+button.primary {
+    background: linear-gradient(135deg, rgba(0, 243, 255, 0.2) 0%, rgba(188, 19, 254, 0.2) 100%);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+}
+
+button.primary:hover {
+    background: linear-gradient(135deg, rgba(0, 243, 255, 0.4) 0%, rgba(188, 19, 254, 0.4) 100%);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+button.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--glass-border);
+    color: var(--text-secondary);
+}
+
+button.secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* --- Status Section --- */
+.status-section {
+    border-top: 1px solid var(--glass-border);
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.turn-indicator {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+}
+
+.footer-link {
+    text-align: center;
+}
+
+.footer-link a {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    letter-spacing: 2px;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.footer-link a:hover {
+    opacity: 1;
+    color: var(--accent-primary);
+}
+
+/* --- Game Area --- */
+.game-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #151515 0%, #050505 100%);
+    overflow: hidden;
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 243, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    background-color: rgba(10, 10, 10, 0.8);
+    border-radius: 8px;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    /* Remove inline-block spacing */
+}
+
+/* --- Modals --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background: rgba(20, 20, 20, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    max-width: 90%;
+    width: 400px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+}
+
+.modal h2 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #fff;
+    letter-spacing: 2px;
+}
+
+.modal-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.room-code-display {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    letter-spacing: 8px;
+    font-weight: 700;
+    margin: 20px 0;
+    color: var(--accent-primary);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--accent-primary);
+    text-shadow: 0 0 15px var(--accent-primary);
+}
+
+.room-input {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    letter-spacing: 4px;
+    text-align: center;
+    width: 200px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--glass-border);
+    color: var(--accent-primary);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.room-input:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+}
+
+.loading-spinner {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid var(--accent-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    animation: confetti-fall 3s ease-in-out forwards;
+}
+
+@keyframes confetti-fall {
+    0% {
+        opacity: 1;
+        transform: translateY(-100%) rotate(0deg);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(720deg);
+    }
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .main-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 16px;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        flex-wrap: wrap;
+    }
+
+    .brand-section {
+        flex: 1;
+    }
+
+    .brand-section h1 {
+        font-size: 1.2rem;
+    }
+
+    .status-section {
+        border-top: none;
+        padding-top: 0;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .turn-indicator {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    .footer-link {
+        display: none;
+    }
+
+    .controls-section {
+        display: none;
+        /* Hide controls on mobile initially, maybe show in modal or bottom sheet */
+    }
+
+    /* Mobile Controls - Simplified for now */
+    .mobile-controls-toggle {
+        display: block;
+    }
+
+    .game-area {
+        padding: 10px;
+    }
+}

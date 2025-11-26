@@ -448,7 +448,7 @@ setInterval(() => {
     }
 }, 5 * 60 * 1000);
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Chain Reaction server running on port ${PORT}`);
     console.log(`WebSocket server ready for connections`);
 });
