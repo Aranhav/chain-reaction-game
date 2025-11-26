@@ -49,9 +49,12 @@ export class OnlineManager {
             this.game.startOnlineGame(data.playerIndex, data.grid);
             document.getElementById('online-room-id').innerText = data.roomCode;
             document.getElementById('online-status').style.display = 'block';
-            // Hide local controls during online play
+            // Hide controls during online play using class
             const controls = document.querySelector('.controls-section');
-            if (controls) controls.style.display = 'none';
+            if (controls) {
+                controls.style.display = ''; // Remove inline style
+                controls.classList.add('online-hidden'); // Use class for hiding
+            }
         });
 
         // Move received from server
@@ -120,8 +123,11 @@ export class OnlineManager {
         this.roomCode = null;
         const onlineStatus = document.getElementById('online-status');
         if (onlineStatus) onlineStatus.style.display = 'none';
-        // Show local controls after leaving online game
+        // Reset controls - remove classes, let CSS media query handle visibility
         const controls = document.querySelector('.controls-section');
-        if (controls) controls.style.display = 'flex';
+        if (controls) {
+            controls.style.display = ''; // Remove inline style
+            controls.classList.remove('online-hidden'); // Show controls again
+        }
     }
 }

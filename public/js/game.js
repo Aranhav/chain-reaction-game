@@ -188,9 +188,18 @@ class Game {
         this.doResize();
         this.createGrid();
 
-        // Show controls section (for mobile)
+        // Reset mobile menu state (remove inline style, let CSS handle it)
         const controls = document.querySelector('.controls-section');
-        if (controls) controls.style.display = 'flex';
+        if (controls) {
+            controls.style.display = ''; // Remove inline style, let CSS media query work
+            controls.classList.remove('mobile-visible'); // Close mobile menu
+        }
+
+        // Reset hamburger icon
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>';
+        }
     }
 
     // Synchronous resize without retry delays
@@ -372,6 +381,7 @@ class Game {
     async processChainReaction(playerIndex) {
         let unstable = true;
         let loops = 0;
+        let isFirstReaction = true;
 
         while (unstable && loops < 100) {
             unstable = false;
@@ -388,10 +398,12 @@ class Game {
 
             if (criticals.length > 0) {
                 unstable = true;
-                await new Promise(resolve => setTimeout(resolve, 200)); // Animation delay
 
+                // IMMEDIATELY process the split - no delay for first reaction
+                // This prevents showing 4 orbs before split
                 this.sound.playExplosion();
 
+                // First, subtract from all critical cells and add explosion animations
                 for (const crit of criticals) {
                     const cell = this.grid[crit.r][crit.c];
                     cell.count -= cell.criticalMass;
@@ -406,7 +418,10 @@ class Game {
                         radius: 0,
                         alpha: 1
                     });
+                }
 
+                // Then spread to neighbors with particle animations
+                for (const crit of criticals) {
                     const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
                     for (const [dr, dc] of dirs) {
                         const nr = crit.r + dr;
@@ -428,6 +443,12 @@ class Game {
                         }
                     }
                 }
+
+                // Wait for animation AFTER the split (not before)
+                // Shorter delay for chain reactions to feel snappier
+                const delay = isFirstReaction ? 100 : 150;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                isFirstReaction = false;
             }
         }
     }

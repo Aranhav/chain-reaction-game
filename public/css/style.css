@@ -109,6 +109,10 @@ body {
     flex: 1;
 }
 
+.controls-section.online-hidden {
+    display: none !important;
+}
+
 .control-group {
     display: flex;
     flex-direction: column;
