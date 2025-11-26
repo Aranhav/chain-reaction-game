@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+    <radialGradient id="orbCyan" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#6bffff"/>
+      <stop offset="50%" stop-color="#00f3ff"/>
+      <stop offset="100%" stop-color="#00b8c4"/>
+    </radialGradient>
+    <radialGradient id="orbPurple" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#d46bff"/>
+      <stop offset="50%" stop-color="#bc13fe"/>
+      <stop offset="100%" stop-color="#8800cc"/>
+    </radialGradient>
+    <radialGradient id="orbRed" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#ff3333"/>
+      <stop offset="100%" stop-color="#cc0000"/>
+    </radialGradient>
+    <radialGradient id="orbBlue" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#6bb3ff"/>
+      <stop offset="50%" stop-color="#3399ff"/>
+      <stop offset="100%" stop-color="#0066cc"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f3ff"/>
+      <stop offset="100%" stop-color="#bc13fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Grid lines -->
+  <g stroke="#00f3ff" stroke-width="1" opacity="0.15">
+    <line x1="100" y1="100" x2="100" y2="530"/>
+    <line x1="200" y1="100" x2="200" y2="530"/>
+    <line x1="300" y1="100" x2="300" y2="530"/>
+    <line x1="400" y1="100" x2="400" y2="530"/>
+    <line x1="500" y1="100" x2="500" y2="530"/>
+    <line x1="100" y1="100" x2="500" y2="100"/>
+    <line x1="100" y1="200" x2="500" y2="200"/>
+    <line x1="100" y1="300" x2="500" y2="300"/>
+    <line x1="100" y1="400" x2="500" y2="400"/>
+    <line x1="100" y1="500" x2="500" y2="500"/>
+  </g>
+
+  <!-- Orbs on grid -->
+  <circle cx="150" cy="150" r="35" fill="url(#orbCyan)" filter="url(#glow)"/>
+  <circle cx="250" cy="150" r="35" fill="url(#orbCyan)" filter="url(#glow)"/>
+  <circle cx="350" cy="250" r="35" fill="url(#orbPurple)" filter="url(#glow)"/>
+  <circle cx="150" cy="350" r="35" fill="url(#orbRed)" filter="url(#glow)"/>
+  <circle cx="250" cy="350" r="35" fill="url(#orbBlue)" filter="url(#glow)"/>
+  <circle cx="450" cy="350" r="35" fill="url(#orbCyan)" filter="url(#glow)"/>
+  <circle cx="350" cy="450" r="35" fill="url(#orbPurple)" filter="url(#glow)"/>
+  <circle cx="450" cy="450" r="35" fill="url(#orbBlue)" filter="url(#glow)"/>
+
+  <!-- Explosion effect -->
+  <g opacity="0.6">
+    <line x1="350" y1="250" x2="250" y2="150" stroke="#bc13fe" stroke-width="3"/>
+    <line x1="350" y1="250" x2="450" y2="150" stroke="#bc13fe" stroke-width="3"/>
+    <line x1="350" y1="250" x2="250" y2="350" stroke="#bc13fe" stroke-width="3"/>
+    <line x1="350" y1="250" x2="450" y2="350" stroke="#bc13fe" stroke-width="3"/>
+  </g>
+
+  <!-- Title -->
+  <text x="850" y="240" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="url(#textGrad)" text-anchor="middle">CHAIN</text>
+  <text x="850" y="330" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="url(#textGrad)" text-anchor="middle">REACTION</text>
+
+  <!-- Subtitle -->
+  <text x="850" y="400" font-family="Arial, sans-serif" font-size="24" fill="#a0a0a0" text-anchor="middle">Strategic Multiplayer Board Game</text>
+
+  <!-- Features -->
+  <text x="850" y="480" font-family="Arial, sans-serif" font-size="18" fill="#00f3ff" text-anchor="middle">Play vs AI | Online Multiplayer | 2-6 Players</text>
+
+  <!-- Kaiross branding -->
+  <text x="850" y="560" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle">KAIROSS.IN</text>
+
+  <!-- Border glow -->
+  <rect x="10" y="10" width="1180" height="610" fill="none" stroke="#00f3ff" stroke-width="2" opacity="0.3" rx="8"/>
+</svg>

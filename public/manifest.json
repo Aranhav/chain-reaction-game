@@ -1,0 +1,71 @@
+{
+  "name": "Chain Reaction - Strategic Multiplayer Game",
+  "short_name": "Chain Reaction",
+  "description": "Strategic multiplayer board game with chain reaction mechanics. Play against AI or friends online. Capture cells, trigger explosions, and dominate the grid!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#00f3ff",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["games", "entertainment", "strategy"],
+  "icons": [
+    {
+      "src": "/public/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/public/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/public/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/public/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/public/screenshots/gameplay.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Chain Reaction Gameplay"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play vs AI",
+      "short_name": "vs AI",
+      "description": "Start a game against AI opponent",
+      "url": "/?mode=ai",
+      "icons": [{ "src": "/public/favicon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Play Online",
+      "short_name": "Online",
+      "description": "Play multiplayer online",
+      "url": "/?mode=online",
+      "icons": [{ "src": "/public/favicon.svg", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

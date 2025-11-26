@@ -23,6 +23,21 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Privacy policy page
+app.get('/privacy', (req, res) => {
+    res.sendFile(path.join(__dirname, 'privacy.html'));
+});
+
+// SEO files from root
+app.get('/robots.txt', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+});
+
+app.get('/sitemap.xml', (req, res) => {
+    res.type('application/xml');
+    res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
+
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',

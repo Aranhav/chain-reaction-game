@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <radialGradient id="orbMain" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#6bffff"/>
+      <stop offset="50%" stop-color="#00f3ff"/>
+      <stop offset="100%" stop-color="#00b8c4"/>
+    </radialGradient>
+    <radialGradient id="orbAccent" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#d46bff"/>
+      <stop offset="50%" stop-color="#bc13fe"/>
+      <stop offset="100%" stop-color="#8800cc"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="16" cy="16" r="15" fill="#0a0a0a" stroke="#00f3ff" stroke-width="1"/>
+
+  <!-- Center orb -->
+  <circle cx="16" cy="16" r="5" fill="url(#orbMain)"/>
+  <circle cx="14.5" cy="14.5" r="1.5" fill="rgba(255,255,255,0.5)"/>
+
+  <!-- Corner orbs -->
+  <circle cx="7" cy="7" r="3.5" fill="url(#orbAccent)"/>
+  <circle cx="25" cy="7" r="3.5" fill="url(#orbMain)"/>
+  <circle cx="7" cy="25" r="3.5" fill="url(#orbMain)"/>
+  <circle cx="25" cy="25" r="3.5" fill="url(#orbAccent)"/>
+
+  <!-- Connection lines -->
+  <line x1="16" y1="16" x2="7" y2="7" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="16" y1="16" x2="25" y2="7" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="16" y1="16" x2="7" y2="25" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="16" y1="16" x2="25" y2="25" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+</svg>
