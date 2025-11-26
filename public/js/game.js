@@ -123,6 +123,20 @@ class Game {
                 }, 2000);
             });
         });
+
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const controlsSection = document.querySelector('.controls-section');
+        if (mobileMenuBtn && controlsSection) {
+            mobileMenuBtn.addEventListener('click', () => {
+                controlsSection.classList.toggle('mobile-visible');
+                // Change icon when open
+                const isOpen = controlsSection.classList.contains('mobile-visible');
+                mobileMenuBtn.innerHTML = isOpen
+                    ? '<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
+                    : '<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>';
+            });
+        }
     }
 
     resize() {
@@ -429,14 +443,25 @@ class Game {
         for (let i = this.animations.length - 1; i >= 0; i--) {
             const anim = this.animations[i];
             if (anim.type === 'explosion') {
-                anim.radius += 2;
-                anim.alpha -= 0.05;
+                // Slower, smoother explosion
+                anim.radius += 1.5;
+                anim.alpha -= 0.03;
                 if (anim.alpha <= 0) this.animations.splice(i, 1);
             } else if (anim.type === 'particle') {
-                anim.progress += 0.1;
+                // Slower particle movement with easing
+                anim.progress += 0.025; // Much slower (was 0.1)
                 if (anim.progress >= 1) this.animations.splice(i, 1);
             }
         }
+    }
+
+    // Easing function for smooth animation
+    easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+    }
+
+    easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     }
 
     draw() {
@@ -517,14 +542,34 @@ class Game {
                 this.ctx.shadowBlur = 0;
 
             } else if (anim.type === 'particle') {
-                const x = anim.x + (anim.tx - anim.x) * anim.progress;
-                const y = anim.y + (anim.ty - anim.y) * anim.progress;
-                const alpha = 1 - anim.progress;
+                // Apply easing for smooth movement
+                const easedProgress = this.easeOutCubic(anim.progress);
+                const x = anim.x + (anim.tx - anim.x) * easedProgress;
+                const y = anim.y + (anim.ty - anim.y) * easedProgress;
 
+                // Fade out smoothly
+                const alpha = 1 - anim.progress * 0.5;
+
+                // Draw trail (multiple smaller circles behind)
+                const trailCount = 5;
+                for (let t = trailCount; t >= 0; t--) {
+                    const trailProgress = Math.max(0, easedProgress - t * 0.08);
+                    const tx = anim.x + (anim.tx - anim.x) * trailProgress;
+                    const ty = anim.y + (anim.ty - anim.y) * trailProgress;
+                    const trailAlpha = alpha * (1 - t / trailCount) * 0.6;
+                    const trailRadius = 6 * (1 - t / trailCount);
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(tx, ty, trailRadius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = hexToRgba(anim.color, trailAlpha);
+                    this.ctx.fill();
+                }
+
+                // Main particle (larger, brighter)
                 this.ctx.beginPath();
-                this.ctx.arc(x, y, 4, 0, Math.PI * 2);
+                this.ctx.arc(x, y, 7, 0, Math.PI * 2);
                 this.ctx.fillStyle = hexToRgba(anim.color, alpha);
-                this.ctx.shadowBlur = 10;
+                this.ctx.shadowBlur = 15;
                 this.ctx.shadowColor = anim.color;
                 this.ctx.fill();
                 this.ctx.shadowBlur = 0;
@@ -550,18 +595,19 @@ class Game {
         // Base radius scales with cell size
         const baseRadius = Math.min(this.cellWidth, this.cellHeight) * 0.2;
 
-        // Pulse effect when near critical mass
+        // Subtle pulse effect when near critical mass (no distracting ring)
         const time = Date.now() / 1000;
         const isNearCritical = count >= criticalMass - 1;
-        const pulseScale = isNearCritical ? 1 + Math.sin(time * 8) * 0.15 : 1;
+        const pulseScale = isNearCritical ? 1 + Math.sin(time * 4) * 0.08 : 1; // Subtler pulse
 
         // Orbit offset based on cell size
         const orbitOffset = Math.min(this.cellWidth, this.cellHeight) * 0.2;
 
-        // Rotation speed increases when near critical
-        const rotationSpeed = isNearCritical ? time * 5 : time * 2;
+        // Rotation speed - slightly faster when near critical
+        const rotationSpeed = isNearCritical ? time * 3 : time * 2;
 
-        this.ctx.shadowBlur = isNearCritical ? 25 : 15;
+        // Slightly brighter glow when near critical
+        this.ctx.shadowBlur = isNearCritical ? 18 : 12;
         this.ctx.shadowColor = color;
 
         if (count === 1) {
@@ -578,15 +624,6 @@ class Game {
                 const a = angle + (i * Math.PI * 2 / Math.min(count, 3));
                 this.drawSingleOrb(cx + Math.cos(a) * orbitOffset, cy + Math.sin(a) * orbitOffset, baseRadius * pulseScale, color);
             }
-        }
-
-        // Draw critical warning ring
-        if (isNearCritical) {
-            this.ctx.beginPath();
-            this.ctx.arc(cx, cy, orbitOffset + baseRadius + 5, 0, Math.PI * 2);
-            this.ctx.strokeStyle = hexToRgba(color, 0.3 + Math.sin(time * 10) * 0.2);
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
         }
 
         this.ctx.shadowBlur = 0;
