@@ -210,19 +210,26 @@ class Game {
         const containerWidth = container.clientWidth || 800;
         const containerHeight = container.clientHeight || 600;
 
-        // Calculate cell size to maintain square cells
-        const padding = 40;
+        // Responsive padding - smaller on mobile
+        const isMobile = window.innerWidth <= 768;
+        const padding = isMobile ? 10 : 30;
+
         const availableWidth = containerWidth - padding * 2;
         const availableHeight = containerHeight - padding * 2;
 
+        // Calculate cell size to maintain square cells
         const cellByWidth = availableWidth / this.cols;
         const cellByHeight = availableHeight / this.rows;
         const cellSize = Math.min(cellByWidth, cellByHeight);
 
-        this.cellWidth = cellSize;
-        this.cellHeight = cellSize;
-        this.width = this.cols * cellSize;
-        this.height = this.rows * cellSize;
+        // Ensure minimum cell size for playability
+        const minCellSize = isMobile ? 35 : 45;
+        const finalCellSize = Math.max(cellSize, minCellSize);
+
+        this.cellWidth = finalCellSize;
+        this.cellHeight = finalCellSize;
+        this.width = this.cols * finalCellSize;
+        this.height = this.rows * finalCellSize;
 
         // Set canvas size with device pixel ratio
         const dpr = window.devicePixelRatio || 1;
