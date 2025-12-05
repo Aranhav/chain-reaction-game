@@ -1,14 +1,15 @@
 // --- Constants & Utilities ---
 
+// Player colors - MUST match Android app exactly for cross-platform compatibility
 export const COLORS = [
-    '#FF3B30', // Red
-    '#32D74B', // Green
-    '#0A84FF', // Blue
-    '#FFD60A', // Yellow
-    '#BF5AF2', // Purple
-    '#64D2FF', // Cyan
-    '#FF9F0A', // Orange
-    '#FF375F'  // Pink
+    '#FF3B3B', // Red (Player 1)
+    '#00D26A', // Green (Player 2)
+    '#3B8BFF', // Blue (Player 3)
+    '#FFD000', // Yellow (Player 4)
+    '#AA66FF', // Purple (Player 5)
+    '#00D4FF', // Cyan (Player 6)
+    '#FF6B00', // Orange (Player 7) - Kaiross accent
+    '#FF4488'  // Pink (Player 8)
 ];
 
 // Helper to darken colors for grid lines or backgrounds if needed

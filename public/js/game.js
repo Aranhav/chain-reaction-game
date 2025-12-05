@@ -1,7 +1,7 @@
 import { COLORS, adjustColor, getCriticalMass, hexToRgba } from './utils.js';
 import { SoundManager } from './sound.js';
 import { AI } from './ai.js';
-import { OnlineManager } from './online.js';
+import { FirebaseOnlineManager } from './firebase-online.js';
 
 class Game {
     constructor() {
@@ -30,7 +30,7 @@ class Game {
         // Managers
         this.sound = new SoundManager();
         this.ai = new AI(this);
-        this.online = new OnlineManager(this);
+        this.online = new FirebaseOnlineManager(this);
 
         // UI Elements
         this.turnText = document.getElementById('current-turn-text');
@@ -61,6 +61,19 @@ class Game {
         document.getElementById('play-again-btn').addEventListener('click', () => {
             document.getElementById('win-modal').classList.remove('active');
             this.restartGame();
+        });
+
+        // Online rematch and exit buttons
+        document.getElementById('rematch-btn').addEventListener('click', () => {
+            this.requestRematch();
+        });
+
+        document.getElementById('decline-rematch-btn').addEventListener('click', () => {
+            this.declineRematch();
+        });
+
+        document.getElementById('exit-online-btn').addEventListener('click', () => {
+            this.exitOnlineGame();
         });
 
         // Settings
@@ -151,6 +164,183 @@ class Game {
                     : '<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>';
             });
         }
+
+        // === Android-style Menu Controls ===
+        this.currentMode = 'local'; // local, ai, online
+        this.initAndroidMenu();
+    }
+
+    initAndroidMenu() {
+        // Mode Tabs
+        const modeTabs = document.querySelectorAll('.mode-tab');
+        modeTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const mode = tab.dataset.mode;
+                this.switchMode(mode);
+            });
+        });
+
+        // Player Counter Buttons
+        const playerMinus = document.getElementById('player-minus');
+        const playerPlus = document.getElementById('player-plus');
+        const playerCount = document.getElementById('player-count');
+
+        if (playerMinus && playerPlus) {
+            playerMinus.addEventListener('click', () => {
+                if (this.players > 2) {
+                    this.players--;
+                    playerCount.textContent = this.players;
+                    document.getElementById('player-select').value = this.players;
+                    this.updatePlayerDots();
+                    this.restartGame();
+                }
+            });
+
+            playerPlus.addEventListener('click', () => {
+                if (this.players < 6) {
+                    this.players++;
+                    playerCount.textContent = this.players;
+                    document.getElementById('player-select').value = this.players;
+                    this.updatePlayerDots();
+                    this.restartGame();
+                }
+            });
+        }
+
+        // Grid Size Buttons
+        const gridBtns = document.querySelectorAll('.grid-btn:not(.ai-grid)');
+        gridBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                gridBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.setGridSize(btn.dataset.size);
+            });
+        });
+
+        // AI Grid Size Buttons
+        const aiGridBtns = document.querySelectorAll('.grid-btn.ai-grid');
+        aiGridBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aiGridBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.setGridSize(btn.dataset.size);
+            });
+        });
+
+        // Start Button
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                this.handleStartButton();
+            });
+        }
+
+        // Room code input in sidebar (for online mode)
+        const roomCodeSidebar = document.getElementById('room-code-input-sidebar');
+        if (roomCodeSidebar) {
+            roomCodeSidebar.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase();
+                // Update button text based on room code input
+                this.updateOnlineButtonText();
+            });
+        }
+
+        // Initialize player dots
+        this.updatePlayerDots();
+    }
+
+    switchMode(mode) {
+        this.currentMode = mode;
+
+        // Update tab styles
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.mode === mode);
+        });
+
+        // Show/hide mode content
+        document.getElementById('mode-content-local').style.display = mode === 'local' ? 'block' : 'none';
+        document.getElementById('mode-content-ai').style.display = mode === 'ai' ? 'block' : 'none';
+        document.getElementById('mode-content-online').style.display = mode === 'online' ? 'block' : 'none';
+
+        // Update start button text
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            const svg = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+            if (mode === 'local') {
+                startBtn.innerHTML = svg + ' START GAME';
+            } else if (mode === 'ai') {
+                startBtn.innerHTML = svg + ' PLAY VS AI';
+            } else if (mode === 'online') {
+                this.updateOnlineButtonText();
+            }
+        }
+
+        // Handle AI toggle for backward compatibility
+        document.getElementById('ai-toggle').checked = mode === 'ai';
+        if (mode === 'ai') {
+            this.isAI = true;
+            this.players = 2;
+        } else {
+            this.isAI = false;
+        }
+    }
+
+    updateOnlineButtonText() {
+        if (this.currentMode !== 'online') return;
+
+        const startBtn = document.getElementById('start-btn');
+        if (!startBtn) return;
+
+        const roomCode = document.getElementById('room-code-input-sidebar')?.value || '';
+        const joinSvg = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+        const createSvg = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+        if (roomCode.length === 4) {
+            startBtn.innerHTML = joinSvg + ' JOIN ROOM';
+        } else {
+            startBtn.innerHTML = createSvg + ' CREATE ROOM';
+        }
+    }
+
+    handleStartButton() {
+        if (this.currentMode === 'local') {
+            this.restartGame();
+        } else if (this.currentMode === 'ai') {
+            this.isAI = true;
+            this.players = 2;
+            this.restartGame();
+        } else if (this.currentMode === 'online') {
+            const roomCode = document.getElementById('room-code-input-sidebar')?.value || '';
+            if (roomCode.length === 4) {
+                this.online.joinGameByCode(roomCode);
+            } else {
+                // Show lobby modal for create/auto-match
+                document.getElementById('lobby-modal').classList.add('active');
+            }
+        }
+    }
+
+    setGridSize(size) {
+        if (size === 'small') { this.rows = 6; this.cols = 4; }
+        else if (size === 'medium') { this.rows = 9; this.cols = 6; }
+        else if (size === 'large') { this.rows = 12; this.cols = 8; }
+        else if (size === 'xlarge') { this.rows = 15; this.cols = 10; }
+
+        document.getElementById('grid-select').value = size;
+        this.restartGame();
+    }
+
+    updatePlayerDots() {
+        const dotsContainer = document.getElementById('player-dots');
+        if (!dotsContainer) return;
+
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'player-dot' + (i >= this.players ? ' inactive' : '');
+            dot.style.backgroundColor = COLORS[i];
+            dotsContainer.appendChild(dot);
+        }
     }
 
     resize() {
@@ -184,13 +374,26 @@ class Game {
         this.isAnimating = false;
         this.isGameOver = false;
 
-        // Resize and recreate grid
-        this.doResize();
-        this.createGrid();
+        // Reset grid size from UI selection (fixes grid size when switching from online to local)
+        const gridSelect = document.getElementById('grid-select');
+        if (gridSelect) {
+            const size = gridSelect.value;
+            if (size === 'small') { this.rows = 6; this.cols = 4; }
+            else if (size === 'medium') { this.rows = 9; this.cols = 6; }
+            else if (size === 'large') { this.rows = 12; this.cols = 8; }
+            else if (size === 'xlarge') { this.rows = 15; this.cols = 10; }
+        }
 
-        // Reset mobile menu state (remove inline style, let CSS handle it)
+        // Reset player count from UI selection
+        const playerSelect = document.getElementById('player-select');
+        if (playerSelect && !this.isAI) {
+            this.players = parseInt(playerSelect.value) || 2;
+        }
+
+        // Remove online-hidden class from controls
         const controls = document.querySelector('.controls-section');
         if (controls) {
+            controls.classList.remove('online-hidden');
             controls.style.display = ''; // Remove inline style, let CSS media query work
             controls.classList.remove('mobile-visible'); // Close mobile menu
         }
@@ -200,6 +403,16 @@ class Game {
         if (mobileMenuBtn) {
             mobileMenuBtn.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>';
         }
+
+        // Resize and recreate grid (with delay for DOM to update)
+        this.doResize();
+        this.createGrid();
+
+        // Additional resize after DOM settles
+        requestAnimationFrame(() => {
+            this.doResize();
+            setTimeout(() => this.doResize(), 100);
+        });
     }
 
     // Synchronous resize without retry delays
@@ -243,17 +456,33 @@ class Game {
         this.ctx.scale(dpr, dpr);
     }
 
-    startOnlineGame(playerIndex, initialGrid) {
+    startOnlineGame(playerIndex, initialGrid, rows, cols) {
         this.isOnline = true;
         this.myPlayerIndex = playerIndex;
         this.players = 2; // Online is always 1v1 for now
-        this.rows = initialGrid.length;
-        this.cols = initialGrid[0].length;
+        this.rows = rows || initialGrid.length;
+        this.cols = cols || initialGrid[0].length;
         this.grid = initialGrid; // Use server grid
         this.currentTurn = 0;
         this.isGameOver = false;
-        this.resize(); // Recalculate cell sizes
+        this.eliminatedPlayers = new Set();
+        this.playersWhoMoved = new Set();
+        this.animations = [];
+        this.isAnimating = false;
+
+        // Hide win modal if showing from previous game
+        document.getElementById('win-modal').classList.remove('active');
+
+        // Resize immediately
+        this.resize();
         this.updateUI();
+
+        // Resize again after DOM layout updates (fixes mobile sizing issues)
+        requestAnimationFrame(() => {
+            this.resize();
+            // One more resize after a short delay for safety
+            setTimeout(() => this.resize(), 100);
+        });
     }
 
     handleClick(e) {
@@ -281,8 +510,8 @@ class Game {
         const cell = this.grid[r][c];
         if (cell.owner === null || cell.owner === this.currentTurn) {
             if (this.isOnline) {
-                this.online.sendMove(r, c);
-                // Optimistic update? No, wait for server to prevent desync
+                // Execute locally first, then sync to Firebase after chain reaction completes
+                this.executeOnlineMove(r, c, this.currentTurn);
             } else {
                 this.executeMove(r, c, this.currentTurn);
             }
@@ -291,11 +520,81 @@ class Game {
         }
     }
 
+    // Execute move for online game - sync to Firebase after chain reaction
+    executeOnlineMove(r, c, playerIndex) {
+        this.sound.playPop();
+
+        // Track that this player has made a move
+        this.playersWhoMoved.add(playerIndex);
+
+        this.grid[r][c].owner = playerIndex;
+        this.grid[r][c].count++;
+
+        this.isAnimating = true;
+        this.processChainReaction(playerIndex).then(() => {
+            this.isAnimating = false;
+
+            // Sync the final state to Firebase
+            this.online.sendMove(r, c, this.grid);
+
+            // Check for eliminated players
+            this.checkEliminations();
+
+            // Check Win
+            const winner = this.checkWinner();
+            if (winner !== null) {
+                this.online.reportGameOver(winner);
+                this.triggerWin(winner);
+            } else {
+                // Turn will be updated via Firebase listener
+                this.currentTurn = playerIndex === 0 ? 1 : 0;
+                this.updateUI();
+            }
+        });
+    }
+
     applyOnlineMove(data) {
-        // data contains: r, c, playerIndex, grid (optional snapshot), currentTurn
-        // We can either trust the server's grid or simulate locally.
-        // For smooth animation, we simulate locally.
-        this.executeMove(data.r, data.c, data.playerIndex);
+        // data contains: grid, currentTurn, lastMove { row, col, player }
+        // For smooth animation, we execute the move locally using lastMove coordinates
+        if (data.lastMove) {
+            const r = data.lastMove.row;
+            const c = data.lastMove.col;
+            const playerIndex = data.lastMove.player;
+
+            // Track that this player has made a move
+            this.playersWhoMoved.add(playerIndex);
+
+            // Execute the move with animation
+            this.sound.playPop();
+            this.grid[r][c].owner = playerIndex;
+            this.grid[r][c].count++;
+
+            this.isAnimating = true;
+            this.processChainReaction(playerIndex).then(() => {
+                this.isAnimating = false;
+
+                // Update turn
+                this.currentTurn = data.currentTurn;
+
+                // Check eliminations
+                this.checkEliminations();
+
+                // Check winner locally (Firebase will also report if there's a winner)
+                const winner = this.checkWinner();
+                if (winner !== null) {
+                    this.triggerWin(winner);
+                } else {
+                    this.updateUI();
+                }
+            });
+        } else {
+            // No lastMove info - just sync the grid directly (fallback)
+            if (data.grid) {
+                this.grid = data.grid;
+                this.currentTurn = data.currentTurn;
+                this.updateUI();
+            }
+        }
     }
 
     executeMove(r, c, playerIndex) {
@@ -524,21 +823,177 @@ class Game {
         return null;
     }
 
-    triggerWin(winnerIndex) {
+    triggerWin(winnerIndex, playerLeft = false) {
         this.isGameOver = true;
         this.sound.playWin();
 
         const color = COLORS[winnerIndex];
-        const name = this.isOnline
-            ? (winnerIndex === this.myPlayerIndex ? "You Win!" : "You Lose!")
-            : `Player ${winnerIndex + 1} Wins!`;
+        let name = '';
+        let subtitle = '';
+
+        if (this.isOnline) {
+            if (winnerIndex === this.myPlayerIndex) {
+                name = "You Win!";
+                if (playerLeft) {
+                    subtitle = "Opponent left the game";
+                }
+            } else {
+                name = "You Lose!";
+            }
+        } else {
+            name = `Player ${winnerIndex + 1} Wins!`;
+        }
 
         document.getElementById('winner-text').innerText = name;
         document.getElementById('winner-text').style.color = color;
+
+        // Show/hide subtitle
+        const subtitleEl = document.getElementById('win-subtitle');
+        if (subtitle) {
+            subtitleEl.innerText = subtitle;
+            subtitleEl.style.display = 'block';
+        } else {
+            subtitleEl.style.display = 'none';
+        }
+
+        // Show appropriate buttons
+        if (this.isOnline) {
+            document.getElementById('local-win-btns').style.display = 'none';
+            document.getElementById('online-win-btns').style.display = 'flex';
+            // Hide rematch if player left
+            if (playerLeft) {
+                document.getElementById('rematch-btn').style.display = 'none';
+            } else {
+                document.getElementById('rematch-btn').style.display = 'block';
+                document.getElementById('rematch-btn').innerText = 'Request Rematch';
+                document.getElementById('rematch-btn').disabled = false;
+            }
+            document.getElementById('decline-rematch-btn').style.display = 'none';
+        } else {
+            document.getElementById('local-win-btns').style.display = 'flex';
+            document.getElementById('online-win-btns').style.display = 'none';
+        }
+
+        // Reset rematch status
+        document.getElementById('rematch-status').style.display = 'none';
+        document.getElementById('rematch-spinner').style.display = 'none';
+
         document.getElementById('win-modal').classList.add('active');
 
         // Confetti
         this.spawnConfetti(color);
+    }
+
+    requestRematch() {
+        if (!this.isOnline) return;
+
+        const rematchBtn = document.getElementById('rematch-btn');
+
+        // Check if this is accepting a rematch (opponent already requested)
+        if (rematchBtn.innerText === 'Accept Rematch') {
+            // Accept the rematch
+            const statusEl = document.getElementById('rematch-status');
+            const statusText = document.getElementById('rematch-status-text');
+            const spinner = document.getElementById('rematch-spinner');
+
+            statusEl.style.display = 'block';
+            statusText.innerText = 'Starting rematch...';
+            spinner.style.display = 'block';
+
+            rematchBtn.disabled = true;
+            this.online.acceptRematch();
+            return;
+        }
+
+        // Requesting a new rematch
+        const statusEl = document.getElementById('rematch-status');
+        const statusText = document.getElementById('rematch-status-text');
+        const spinner = document.getElementById('rematch-spinner');
+
+        statusEl.style.display = 'block';
+        statusText.innerText = 'Waiting for opponent...';
+        spinner.style.display = 'block';
+
+        // Disable rematch button
+        rematchBtn.disabled = true;
+        rematchBtn.innerText = 'Requested';
+
+        // Send rematch request
+        this.online.requestRematch();
+    }
+
+    exitOnlineGame() {
+        // Close all modals
+        document.getElementById('win-modal').classList.remove('active');
+        document.getElementById('lobby-modal').classList.remove('active');
+
+        // Reset lobby modal state for next time
+        document.getElementById('lobby-main').style.display = 'block';
+        document.getElementById('lobby-waiting').style.display = 'none';
+        document.getElementById('lobby-join').style.display = 'none';
+
+        // Leave and cleanup online
+        this.online.leaveRoom();
+        this.online.cleanup();
+        this.isOnline = false;
+
+        // Restart game with proper grid size
+        this.restartGame();
+    }
+
+    // Called by FirebaseOnlineManager when opponent requests rematch
+    showRematchRequest() {
+        const statusEl = document.getElementById('rematch-status');
+        const statusText = document.getElementById('rematch-status-text');
+
+        statusEl.style.display = 'block';
+        statusText.innerText = 'Opponent wants a rematch!';
+
+        document.getElementById('rematch-btn').innerText = 'Accept Rematch';
+        document.getElementById('rematch-btn').disabled = false;
+        document.getElementById('decline-rematch-btn').style.display = 'inline-block';
+    }
+
+    declineRematch() {
+        if (!this.isOnline) return;
+
+        this.online.declineRematch();
+
+        // Update UI
+        const statusEl = document.getElementById('rematch-status');
+        const statusText = document.getElementById('rematch-status-text');
+        const spinner = document.getElementById('rematch-spinner');
+
+        statusEl.style.display = 'block';
+        statusText.innerText = 'Rematch declined';
+        if (spinner) spinner.style.display = 'none';
+
+        // Hide rematch/decline buttons but keep exit button visible
+        document.getElementById('rematch-btn').style.display = 'none';
+        document.getElementById('decline-rematch-btn').style.display = 'none';
+
+        // Ensure exit button is visible
+        const exitBtn = document.getElementById('exit-online-btn');
+        if (exitBtn) exitBtn.style.display = 'block';
+    }
+
+    // Called when rematch is declined by opponent
+    handleRematchDeclined() {
+        const statusEl = document.getElementById('rematch-status');
+        const statusText = document.getElementById('rematch-status-text');
+        const spinner = document.getElementById('rematch-spinner');
+
+        statusEl.style.display = 'block';
+        statusText.innerText = 'Opponent declined rematch';
+        if (spinner) spinner.style.display = 'none';
+
+        // Hide rematch/decline buttons
+        document.getElementById('rematch-btn').style.display = 'none';
+        document.getElementById('decline-rematch-btn').style.display = 'none';
+
+        // Ensure exit button is visible
+        const exitBtn = document.getElementById('exit-online-btn');
+        if (exitBtn) exitBtn.style.display = 'block';
     }
 
     spawnConfetti(color) {

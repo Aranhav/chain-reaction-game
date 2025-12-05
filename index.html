@@ -37,14 +37,14 @@
     <meta name="twitter:creator" content="@kaiross">
 
     <!-- PWA & Mobile -->
-    <meta name="theme-color" content="#00f3ff" media="(prefers-color-scheme: dark)">
-    <meta name="theme-color" content="#00f3ff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#FF6B00" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#FF6B00" media="(prefers-color-scheme: light)">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chain Reaction">
     <meta name="application-name" content="Chain Reaction">
-    <meta name="msapplication-TileColor" content="#050505">
+    <meta name="msapplication-TileColor" content="#000000">
     <meta name="msapplication-config" content="/browserconfig.xml">
     <meta name="format-detection" content="telephone=no">
 
@@ -53,7 +53,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/public/icons/icon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/public/icons/icon-16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/public/icons/apple-touch-icon.png">
-    <link rel="mask-icon" href="/public/favicon.svg" color="#00f3ff">
+    <link rel="mask-icon" href="/public/favicon.svg" color="#FF6B00">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/public/manifest.json">
@@ -232,8 +232,6 @@
     }
     </script>
 
-    <!-- Socket.io Client -->
-    <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -252,10 +250,14 @@
     <div id="confetti-container" class="confetti-container"></div>
 
     <div class="main-layout">
-        <!-- Sidebar (Controls & Info) -->
+        <!-- Sidebar (Android-style Menu) -->
         <aside class="sidebar">
+            <!-- Title Section -->
             <div class="brand-section">
-                <h1>CHAIN REACTION</h1>
+                <div>
+                    <h1>CHAIN</h1>
+                    <div class="subtitle">REACTION</div>
+                </div>
                 <div id="online-status" class="online-status" style="display:none;">
                     ONLINE: <span id="online-room-id">---</span>
                 </div>
@@ -268,36 +270,97 @@
             </div>
 
             <div class="controls-section">
-                <div class="control-group">
-                    <label for="player-select">Players</label>
-                    <select id="player-select">
-                        <option value="2">2 Players</option>
-                        <option value="3">3 Players</option>
-                        <option value="4">4 Players</option>
-                        <option value="5">5 Players</option>
-                        <option value="6">6 Players</option>
-                    </select>
+                <!-- Mode Tabs (Like Android) -->
+                <div class="mode-tabs">
+                    <button class="mode-tab active" data-mode="local" id="mode-local">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+                        Local
+                    </button>
+                    <button class="mode-tab" data-mode="ai" id="mode-ai">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/></svg>
+                        VS AI
+                    </button>
+                    <button class="mode-tab" data-mode="online" id="mode-online">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        Online
+                    </button>
                 </div>
 
-                <div class="control-group">
-                    <label for="grid-select">Grid Size</label>
-                    <select id="grid-select">
-                        <option value="small">Small (6x4)</option>
-                        <option value="medium" selected>Medium (9x6)</option>
-                        <option value="large">Large (12x8)</option>
-                        <option value="xlarge">XL (15x10)</option>
-                    </select>
+                <!-- LOCAL Mode Content -->
+                <div id="mode-content-local" class="mode-content">
+                    <!-- Player Counter -->
+                    <div class="control-group">
+                        <label>Players</label>
+                        <div class="player-counter">
+                            <button class="counter-btn" id="player-minus">−</button>
+                            <span class="counter-value" id="player-count">2</span>
+                            <button class="counter-btn" id="player-plus">+</button>
+                        </div>
+                        <div class="player-dots" id="player-dots"></div>
+                    </div>
+
+                    <!-- Grid Size Buttons -->
+                    <div class="control-group">
+                        <label>Grid Size</label>
+                        <div class="grid-size-buttons">
+                            <button class="grid-btn" data-size="small">Small</button>
+                            <button class="grid-btn active" data-size="medium">Medium</button>
+                            <button class="grid-btn" data-size="large">Large</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="control-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="ai-toggle"> Play vs AI
-                    </label>
+                <!-- AI Mode Content -->
+                <div id="mode-content-ai" class="mode-content" style="display:none;">
+                    <div class="control-group">
+                        <label>Grid Size</label>
+                        <div class="grid-size-buttons">
+                            <button class="grid-btn ai-grid" data-size="small">Small</button>
+                            <button class="grid-btn ai-grid active" data-size="medium">Medium</button>
+                            <button class="grid-btn ai-grid" data-size="large">Large</button>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        Play against our AI opponent. You are <span class="highlight">Player 1 (Red)</span>, AI is <span class="highlight">Player 2 (Green)</span>.
+                    </div>
                 </div>
 
+                <!-- Online Mode Content -->
+                <div id="mode-content-online" class="mode-content" style="display:none;">
+                    <div class="control-group">
+                        <label>Room Code</label>
+                        <input type="text" id="room-code-input-sidebar" class="room-input" maxlength="4" placeholder="ABCD" style="width:100%;">
+                    </div>
+                    <div class="divider-text">OR</div>
+                    <div class="info-box">
+                        Create a new room and share the code with a friend, or use <span class="highlight">Auto Match</span> to find an opponent.
+                    </div>
+                </div>
+
+                <!-- Hidden selects for backward compatibility -->
+                <select id="player-select" style="display:none;">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4">4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+                <select id="grid-select" style="display:none;">
+                    <option value="small">Small (6x4)</option>
+                    <option value="medium" selected>Medium (9x6)</option>
+                    <option value="large">Large (12x8)</option>
+                    <option value="xlarge">XL (15x10)</option>
+                </select>
+                <input type="checkbox" id="ai-toggle" style="display:none;">
+
+                <!-- Action Buttons -->
                 <div class="action-buttons">
-                    <button id="online-menu-btn" class="primary">Play Online</button>
-                    <button id="restart-btn" class="secondary">Restart Game</button>
+                    <button id="start-btn" class="primary">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        START GAME
+                    </button>
+                    <button id="restart-btn" class="secondary">Restart</button>
+                    <button id="online-menu-btn" class="primary" style="display:none;">Play Online</button>
                 </div>
             </div>
 
@@ -306,7 +369,7 @@
                     <span id="current-turn-text">Player 1's Turn</span>
                 </div>
                 <div class="footer-link">
-                    <a href="https://kaiross.in" target="_blank" rel="noopener noreferrer">KAIROSS.IN</a>
+                    <a href="https://kaiross.in" target="_blank" rel="noopener noreferrer">Made with <span class="heart">♥</span> by <span class="kaiross">Kaiross</span></a>
                 </div>
             </div>
         </aside>
@@ -321,9 +384,18 @@
     <div id="win-modal" class="modal" role="dialog" aria-labelledby="winner-text" aria-modal="true">
         <div class="modal-content">
             <h2 id="winner-text">Red Wins!</h2>
-            <div class="modal-btn-group">
+            <p id="win-subtitle" style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px; display: none;"></p>
+            <div class="modal-btn-group" id="local-win-btns">
                 <button id="play-again-btn" class="primary">Play Again</button>
-                <button id="exit-online-btn" style="display:none;">Exit to Lobby</button>
+            </div>
+            <div class="modal-btn-group" id="online-win-btns" style="display:none;">
+                <button id="rematch-btn" class="primary">Request Rematch</button>
+                <button id="decline-rematch-btn" class="secondary" style="display:none;">Decline</button>
+                <button id="exit-online-btn">Exit to Menu</button>
+            </div>
+            <div id="rematch-status" style="display:none; margin-top:15px;">
+                <p id="rematch-status-text" style="color: #fff;"></p>
+                <div class="loading-spinner" style="display:none;" id="rematch-spinner"></div>
             </div>
         </div>
     </div>

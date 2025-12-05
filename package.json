@@ -1,7 +1,7 @@
 {
   "name": "chain-reaction-game",
-  "version": "1.0.0",
-  "description": "Chain Reaction Neon - A multiplayer strategy game with AI opponent",
+  "version": "2.0.0",
+  "description": "Chain Reaction - A cross-platform multiplayer strategy game with AI opponent and Firebase online play",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,14 +12,15 @@
     "chain-reaction",
     "multiplayer",
     "canvas",
-    "socket.io",
-    "websocket"
+    "firebase",
+    "cross-platform",
+    "android",
+    "pwa"
   ],
   "author": "Kaiross",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
+    "express": "^4.18.2"
   },
   "engines": {
     "node": ">=18.0.0"
